@@ -13,23 +13,27 @@ ERRORS = {
 def parse_log_file() -> Generator[str, None, None]:
     """
     Parses the log file specified by FILE_PATH and yields the last word
-    of each line containing the word "BIG". The single quotes in the 
+    of each line containing the word "BIG". The single quotes in the
     line are removed before splitting.
-    
+
     Yields:
         str: The last word of each relevant line in the log file.
     """
-
-    return (
-        row.replace("'", "").split()[-1]
-        for row in open(FILE_PATH)
-        if "BIG" in row
-    )
+    try:
+        with open(FILE_PATH, "r") as file:
+            for row in file:
+                if "BIG" in row:
+                    yield row.replace("'", "").split()[-1]
+    except FileNotFoundError:
+        print(f"Error: The file at {FILE_PATH} was not found.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 
 def check_device_state(line: str, broken_devices: list) -> None:
     """
-    Checks the state of a device from a log line and appends it to the broken_devices list if the device is broken.
+    Checks the state of a device from a log line and appends it
+    to the broken_devices list if the device is broken.
     The device is considered broken if the line contains the substring "DD".
     """
 
@@ -39,7 +43,8 @@ def check_device_state(line: str, broken_devices: list) -> None:
 
 def print_errors(id: str, errors: list) -> None:
     """
-    Prints a specific error message for a device id if the error list contains a 1.
+    Prints a specific error message for a device id
+    if the error list contains a 1.
     Otherwise, it prints an unknown device error message.
     """
     if "1" in errors:
@@ -47,14 +52,15 @@ def print_errors(id: str, errors: list) -> None:
             if number == "1":
                 print(f"{id}: {ERRORS[index]}")
     else:
-        print(f"{id}: Unknown divice error")
+        print(f"{id}: Unknown device error")
 
 
-def detailed_info_by_broken_diveces(broken_devices: list) -> None:
+def detailed_info_by_broken_devices(broken_devices: list) -> None:
     """
     Prints detailed information about broken devices.
-    
-    For each broken device, it prints the id and a specific error message based on the error bits in the device's log line.
+
+    For each broken device, it prints the id and a specific error message based
+    on the error bits in the device's log line.
     """
     print()
     for device in broken_devices:
@@ -77,23 +83,26 @@ def detailed_info_by_broken_diveces(broken_devices: list) -> None:
 
 def device_counter(line: str, devices: dict) -> None:
     """
-    Counts the number of times a device has a successful message and updates the state if the device becomes broken.
+    Counts the number of times a device has a successful message
+    and updates the state if the device becomes broken.
     """
-    if line[2] not in devices:
-        devices[line[2]] = (
-            {"state": line[-2], "count": 0}
-            if line[-2] == "DD"
-            else {"state": line[-2], "count": 1}
-        )
+    device_id = line[2]
+    device_state = line[-2]
+
+    if device_id not in devices:
+        devices[device_id] = {
+            "state": device_state,
+            "count": 0 if device_state == "DD" else 1,
+        }
     else:
-        if devices[line[2]]["state"] != "DD":
-            if line[-2] != "DD":
-                devices[line[2]]["count"] += 1
-            else:
-                devices[line[2]]["state"] = line[-2]
+        # If the device is not broken, increment the count
+        if devices[device_id]["state"] != "DD" and device_state != "DD":
+            devices[device_id]["count"] += 1
+        # If the device is broken, update its state
+        elif device_state == "DD":
+            devices[device_id]["state"] = "DD"
         else:
-            if line[-2] != "DD":
-                devices[line[2]]["count"] += 1
+            devices[device_id]["count"] += 1
 
 
 def main() -> None:
@@ -124,7 +133,7 @@ def main() -> None:
     for device in devices:
         print(device, ": ", devices[device]["count"])
 
-    detailed_info_by_broken_diveces(broken_devices)
+    detailed_info_by_broken_devices(broken_devices)
 
 
 if __name__ == "__main__":
