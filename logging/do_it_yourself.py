@@ -1,3 +1,4 @@
+# import multiprocessing
 from typing import Generator
 
 FILE_PATH = "logging/app_2.log"
@@ -32,6 +33,7 @@ def print_errors(id: str, errors: list) -> None:
 
 
 def detailed_info_by_broken_diveces(broken_devices: list) -> None:
+    print()
     for device in broken_devices:
         error_list = []
         device = device.split(";")
@@ -68,7 +70,25 @@ def device_counter(line: str, devices: dict) -> None:
                 devices[line[2]]["count"] += 1
 
 
+# ========For multiprocessing========
+def process_line(line: str, broken_devices: list, devices: dict) -> None:
+    check_device_state(line, broken_devices)
+    line_split = line.split(";")
+    device_counter(line_split, devices)
+
+
 def main() -> None:
+    # ========For multiprocessing========
+    # For some reason this isn't working.
+    # But i tried to implement it.
+
+    # manager = multiprocessing.Manager()
+    # devices = manager.dict()
+    # broken_devices = manager.list()
+
+    # with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
+    #     pool.starmap(process_line, [(line, broken_devices, devices) for line in parse_log_file()])
+    # ===================================
     devices = {}
     broken_devices = []
 
@@ -80,11 +100,11 @@ def main() -> None:
     failed_devices = sum(
         1 if devices["state"] == "DD" else 0 for devices in devices.values()
     )
-    print("All big messages: ", len(devices))
-    print("Succesful big messages: ", len(devices) - failed_devices)
-    print("Failed big messages: ", failed_devices)
+    print("All big devices: ", len(devices))
+    print("Succesful big devices: ", len(devices) - failed_devices)
+    print("Failed big devices: ", failed_devices)
 
-    print("Success messages count:")
+    print("\nSuccess messages count:")
     for device in devices:
         print(device, ": ", devices[device]["count"])
 
